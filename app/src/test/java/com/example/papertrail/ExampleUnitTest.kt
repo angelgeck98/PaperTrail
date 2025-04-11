@@ -1,4 +1,4 @@
-package com.example.papertrailocr
+package com.example.papertrail
 
 import org.junit.Test
 

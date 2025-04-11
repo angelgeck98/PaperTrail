@@ -1,4 +1,4 @@
-package com.example.papertrailocr.ui.theme
+package com.example.papertrail.ui.theme
 
 import androidx.compose.ui.graphics.Color
 

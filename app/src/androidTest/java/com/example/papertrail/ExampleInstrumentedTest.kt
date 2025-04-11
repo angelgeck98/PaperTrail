@@ -1,4 +1,4 @@
-package com.example.papertrailocr
+package com.example.papertrail
 
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -19,6 +19,6 @@ class ExampleInstrumentedTest {
     fun useAppContext() {
         // Context of the app under test.
         val appContext = InstrumentationRegistry.getInstrumentation().targetContext
-        assertEquals("com.example.papertrailocr", appContext.packageName)
+        assertEquals("com.example.papertrail", appContext.packageName)
     }
 }
