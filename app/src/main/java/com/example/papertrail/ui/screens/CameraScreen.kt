@@ -7,11 +7,14 @@ import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.camera.view.PreviewView
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.text.style.TextAlign
@@ -33,18 +36,18 @@ sealed class CameraState {
 
 @Composable
 fun CameraScreen(
-    onPhotoCaptured: (Bitmap, String) -> Unit
+    onOcrComplete: (String) -> Unit,
+    modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     var cameraState by remember { mutableStateOf<CameraState>(CameraState.Loading) }
-    var showReceiptCropScreen by remember { mutableStateOf(false) }
-    var uncroppedImage by remember { mutableStateOf<Bitmap?>(null) }
     var resetCamera by remember { mutableStateOf(false) }
     var previewView by remember { mutableStateOf<PreviewView?>(null) }
     val cameraExecutor = remember { Executors.newSingleThreadExecutor() }
     val ocrProcessor = remember { OCRProcessor() }
     val cameraManager = remember { CameraManager(context) }
+    val scanAreaColor = Color.Blue.copy(alpha = 0.3f)
 
     // Camera restart effect
     LaunchedEffect(resetCamera) {
@@ -52,7 +55,7 @@ fun CameraScreen(
             delay(300) // Brief delay to allow cleanup
             cameraManager.cleanup()
             previewView?.let { view ->
-                cameraManager.initializeCamera(view, lifecycleOwner) { error ->
+                cameraManager.initializeCamera(view, lifecycleOwner) { error: Exception ->
                     Log.e("CAMERA", "Restart failed: ${error.message}")
                     cameraState = CameraState.Error("Failed to restart camera: ${error.message}")
                 }
@@ -72,7 +75,7 @@ fun CameraScreen(
     // Request permission launcher
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
-    ) { isGranted ->
+    ) { isGranted: Boolean ->
         cameraState = if (isGranted) CameraState.Active else CameraState.PermissionRequired
     }
 
@@ -85,142 +88,124 @@ fun CameraScreen(
         }
     }
 
-    if (showReceiptCropScreen && uncroppedImage != null) {
-        ReceiptCropScreen(
-            originalBitmap = uncroppedImage!!,
-            onCropConfirmed = { croppedBitmap ->
-                showReceiptCropScreen = false
-                cameraState = CameraState.Processing
-                ocrProcessor.processImage(croppedBitmap) { text ->
-                    onPhotoCaptured(croppedBitmap, text)
-                    cameraState = CameraState.Active
-                    resetCamera = true // Restart camera after processing
+    Box(modifier.fillMaxSize()) {
+        when (cameraState) {
+            is CameraState.Loading -> {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator()
                 }
-            },
-            onCancel = {
-                showReceiptCropScreen = false
-                cameraState = CameraState.Active
-                resetCamera = true // Restart camera after cancel
             }
-        )
-    } else {
-        Column(
-            modifier = Modifier.fillMaxSize(),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            when (cameraState) {
-                is CameraState.Loading -> {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
+            is CameraState.PermissionRequired -> {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    Text(
+                        text = "Camera permission is required to take photos",
+                        style = MaterialTheme.typography.bodyLarge,
+                        textAlign = TextAlign.Center
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Button(
+                        onClick = { permissionLauncher.launch(Manifest.permission.CAMERA) }
                     ) {
-                        CircularProgressIndicator()
+                        Text("Grant Permission")
                     }
                 }
-                is CameraState.PermissionRequired -> {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(16.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center
-                    ) {
-                        Text(
-                            text = "Camera permission is required to take photos",
-                            style = MaterialTheme.typography.bodyLarge,
-                            textAlign = TextAlign.Center
-                        )
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Button(
-                            onClick = { permissionLauncher.launch(Manifest.permission.CAMERA) }
-                        ) {
-                            Text("Grant Permission")
-                        }
-                    }
-                }
-                is CameraState.Error -> {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(16.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center
-                    ) {
-                        Text(
-                            text = (cameraState as CameraState.Error).message,
-                            style = MaterialTheme.typography.bodyLarge,
-                            textAlign = TextAlign.Center
-                        )
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Button(
-                            onClick = {
-                                cameraState = CameraState.Active
-                                resetCamera = true // Restart camera on retry
-                            }
-                        ) {
-                            Text("Retry")
-                        }
-                    }
-                }
-                CameraState.Processing -> {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            CircularProgressIndicator()
-                            Spacer(modifier = Modifier.height(16.dp))
-                            Text("Processing image...")
-                        }
-                    }
-                }
-                CameraState.Active -> {
-                    // Camera preview
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .fillMaxWidth()
-                    ) {
-                        AndroidView(
-                            factory = { ctx ->
-                                PreviewView(ctx).apply {
-                                    scaleType = PreviewView.ScaleType.FILL_CENTER
-                                    previewView = this
-                                    cameraManager.initializeCamera(this, lifecycleOwner) { e ->
-                                        cameraState = CameraState.Error("Failed to initialize camera: ${e.message}")
-                                        Log.e("CameraScreen", "Camera error", e)
-                                    }
-                                }
-                            },
-                            modifier = Modifier.fillMaxSize()
-                        )
-                    }
-
-                    // Capture button
+            }
+            is CameraState.Error -> {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    Text(
+                        text = (cameraState as CameraState.Error).message,
+                        style = MaterialTheme.typography.bodyLarge,
+                        textAlign = TextAlign.Center
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
                     Button(
                         onClick = {
+                            cameraState = CameraState.Active
+                            resetCamera = true
+                        }
+                    ) {
+                        Text("Retry")
+                    }
+                }
+            }
+            CameraState.Processing -> {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color.Black.copy(alpha = 0.7f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator(color = Color.White)
+                }
+            }
+            CameraState.Active -> {
+                // Camera preview
+                AndroidView(
+                    factory = { ctx ->
+                        PreviewView(ctx).apply {
+                            scaleType = PreviewView.ScaleType.FILL_CENTER
+                            previewView = this
+                            cameraManager.initializeCamera(this, lifecycleOwner) { e: Exception ->
+                                cameraState = CameraState.Error("Failed to initialize camera: ${e.message}")
+                                Log.e("CameraScreen", "Camera error", e)
+                            }
+                        }
+                    },
+                    modifier = Modifier.fillMaxSize()
+                )
+
+                // OCR guide box
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.Center)
+                        .size(width = 280.dp, height = 180.dp)
+                        .border(2.dp, Color.White)
+                        .background(scanAreaColor)
+                )
+
+                // Capture button
+                Button(
+                    onClick = {
+                        if (cameraState == CameraState.Active) {
                             cameraState = CameraState.Processing
                             cameraManager.takePicture(
-                                onSuccess = { bitmap ->
-                                    uncroppedImage = bitmap
-                                    showReceiptCropScreen = true
+                                onSuccess = { bitmap: Bitmap ->
+                                    ocrProcessor.processImage(bitmap) { text: String ->
+                                        onOcrComplete(text)
+                                        cameraState = CameraState.Active
+                                        resetCamera = true
+                                    }
                                 },
-                                onError = { error ->
+                                onError = { error: String ->
                                     cameraState = CameraState.Error(error)
                                     Log.e("CameraScreen", "Failed to take picture", Exception(error))
-                                    resetCamera = true // Restart camera on error
+                                    resetCamera = true
                                 }
                             )
-                        },
-                        modifier = Modifier
-                            .padding(16.dp)
-                            .size(64.dp),
-                        enabled = cameraState == CameraState.Active
-                    ) {
-                        Text("📸")
-                    }
+                        }
+                    },
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(16.dp)
+                        .size(64.dp),
+                    enabled = cameraState == CameraState.Active
+                ) {
+                    Text("📸")
                 }
             }
         }

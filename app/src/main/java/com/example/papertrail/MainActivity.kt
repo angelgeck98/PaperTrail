@@ -64,9 +64,9 @@ class MainActivity : ComponentActivity() {
                         )
                     } else if (hasCameraPermission) {
                         CameraScreen(
-                            onPhotoCaptured = { _, text ->
-                                receiptText = text
-                                showReceiptDetail = true
+                            onOcrComplete = { text: String ->
+                                // Handle OCR result
+                                println("OCR Result: $text")
                             }
                         )
                     } else {
