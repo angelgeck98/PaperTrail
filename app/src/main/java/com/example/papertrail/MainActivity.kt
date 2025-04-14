@@ -16,7 +16,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import com.example.papertrail.ui.screens.CameraScreen
-import com.example.papertrail.ui.screens.ReceiptDetailScreen
+import com.example.papertrail.ui.screens.ExpenseBreakdownScreen
 import com.example.papertrail.ui.theme.PaperTrailTheme
 
 class MainActivity : ComponentActivity() {
@@ -50,23 +50,23 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    var showReceiptDetail by remember { mutableStateOf(false) }
+                    var showExpenseBreakdown by remember { mutableStateOf(false) }
                     var receiptText by remember { mutableStateOf("") }
 
-                    if (showReceiptDetail) {
-                        ReceiptDetailScreen(
-                            text = receiptText,
-                            onBack = { showReceiptDetail = false },
-                            onNewReceipt = {
-                                showReceiptDetail = false
-                                receiptText = ""
+                    if (showExpenseBreakdown) {
+                        ExpenseBreakdownScreen(
+                            ocrText = receiptText,
+                            onBack = { showExpenseBreakdown = false },
+                            onSave = {
+                                // TODO: Implement save functionality
+                                showExpenseBreakdown = false
                             }
                         )
                     } else if (hasCameraPermission) {
                         CameraScreen(
                             onOcrComplete = { text: String ->
                                 receiptText = text
-                                showReceiptDetail = true
+                                showExpenseBreakdown = true
                             }
                         )
                     } else {
