@@ -15,20 +15,30 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
-import com.example.papertrail.ui.screens.CameraScreen
-import com.example.papertrail.ui.screens.ReceiptDetailScreen
+import com.example.papertrail.models.Budget
+import com.example.papertrail.models.BudgetPeriod
+import com.example.papertrail.models.ExpenseItem
+import com.example.papertrail.ui.screens.*
 import com.example.papertrail.ui.theme.PaperTrailTheme
+import java.time.LocalDate
 
 // Navigation enum
 enum class Screen {
     HOME,
     CAMERA,
-    RECEIPT_DETAIL,
-    RECEIPTS
+    EXPENSE_BREAKDOWN,
+    RECEIPTS,
+    BUDGET_DASHBOARD,
+    CATEGORY_EDITOR
 }
 
 class MainActivity : ComponentActivity() {
     private var hasCameraPermission by mutableStateOf(false)
+    private var currentScreen by mutableStateOf(Screen.HOME)
+    private var receiptText by mutableStateOf("")
+    private var budgets by mutableStateOf(listOf<Budget>())
+    private var selectedCategory by mutableStateOf("")
+    private var expenseItems by mutableStateOf(listOf<ExpenseItem>())
 
     private val requestPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -58,39 +68,33 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    var showReceiptDetail by remember { mutableStateOf(false) }
-                    var receiptText by remember { mutableStateOf("") }
-
-                    if (showReceiptDetail) {
-                        ReceiptDetailScreen(
-                            text = receiptText,
-                            onBack = { showReceiptDetail = false },
-                            onNewReceipt = {
-                                showReceiptDetail = false
-                                receiptText = ""
+                    when (currentScreen) {
+                        Screen.HOME -> {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .padding(16.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.Center
+                            ) {
+                                Button(
+                                    onClick = { currentScreen = Screen.CAMERA }
+                                ) {
+                                    Text("Take Photo")
+                                }
+                                Spacer(modifier = Modifier.height(16.dp))
+                                Button(
+                                    onClick = { currentScreen = Screen.RECEIPTS }
+                                ) {
+                                    Text("View Receipts")
+                                }
+                                Spacer(modifier = Modifier.height(16.dp))
+                                Button(
+                                    onClick = { currentScreen = Screen.BUDGET_DASHBOARD }
+                                ) {
+                                    Text("Budget Dashboard")
+                                }
                             }
-                        )
-                    } else if (hasCameraPermission) {
-                        CameraScreen(
-                            onOcrComplete = { text: String ->
-                                receiptText = text
-                                showReceiptDetail = true
-                            }
-                        )
-                    } else {
-                        // Permission request UI
-                        Column(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .padding(16.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.Center
-                        ) {
-                            Text(
-                                text = "Camera permission is required to take photos",
-                                style = MaterialTheme.typography.bodyLarge,
-                                textAlign = TextAlign.Center
-                            )
                         }
 
                         Screen.CAMERA -> {
@@ -98,7 +102,7 @@ class MainActivity : ComponentActivity() {
                                 CameraScreen(
                                     onOcrComplete = { text ->
                                         receiptText = text
-                                        screen = Screen.RECEIPT_DETAIL
+                                        currentScreen = Screen.EXPENSE_BREAKDOWN
                                     }
                                 )
                             } else {
@@ -126,20 +130,59 @@ class MainActivity : ComponentActivity() {
                             }
                         }
 
-                        Screen.RECEIPT_DETAIL -> {
-                            ReceiptDetailScreen(
-                                text = receiptText,
-                                onBack = { screen = Screen.HOME },
-                                onNewReceipt = {
-                                    receiptText = ""
-                                    screen = Screen.CAMERA
+                        Screen.EXPENSE_BREAKDOWN -> {
+                            ExpenseBreakdownScreen(
+                                ocrText = receiptText,
+                                onBack = { currentScreen = Screen.HOME },
+                                onSave = { items ->
+                                    expenseItems = items
+                                    currentScreen = Screen.HOME
                                 }
                             )
                         }
 
                         Screen.RECEIPTS -> {
-                            ReceiptsScreen(
-                                onBack = { screen = Screen.HOME }
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .padding(16.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.Center
+                            ) {
+                                Text("Receipts Screen (Coming Soon)")
+                                Spacer(modifier = Modifier.height(16.dp))
+                                Button(
+                                    onClick = { currentScreen = Screen.HOME }
+                                ) {
+                                    Text("Back to Home")
+                                }
+                            }
+                        }
+
+                        Screen.BUDGET_DASHBOARD -> {
+                            BudgetDashboardScreen(
+                                budgets = budgets,
+                                onBack = { currentScreen = Screen.HOME },
+                                onEditCategory = { category ->
+                                    selectedCategory = category
+                                    currentScreen = Screen.CATEGORY_EDITOR
+                                }
+                            )
+                        }
+
+                        Screen.CATEGORY_EDITOR -> {
+                            CategoryEditorScreen(
+                                category = selectedCategory,
+                                budget = budgets.find { it.category == selectedCategory },
+                                onSave = { budget ->
+                                    budgets = budgets.filter { it.category != budget.category } + budget
+                                    currentScreen = Screen.BUDGET_DASHBOARD
+                                },
+                                onDelete = {
+                                    budgets = budgets.filter { it.category != selectedCategory }
+                                    currentScreen = Screen.BUDGET_DASHBOARD
+                                },
+                                onBack = { currentScreen = Screen.BUDGET_DASHBOARD }
                             )
                         }
                     }
