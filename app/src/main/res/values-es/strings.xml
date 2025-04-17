@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">PaperTrail</string>
+    <string name="settings">Configuración</string>
+    <string name="dark_mode">Modo oscuro</string>
+    <string name="font_style">Fuente</string>
+    <string name="language">Idioma</string>
+    <string name="choose_font">Elegir fuente</string>
+    <string name="choose_language">Elegir idioma</string>
+    <string name="scan_receipt">📸 Escanear un recibo</string>
+    <string name="saved_receipts">📁 Recibos guardados</string>
+    <string name="scan_receipt_title">Escanear recibo</string>
+    <string name="camera_permission_required">Se requiere permiso de cámara para tomar fotos</string>
+    <string name="grant_permission">Conceder permiso</string>
+    <string name="retry">Reintentar</string>
+    <string name="back">Atrás</string>
+</resources>

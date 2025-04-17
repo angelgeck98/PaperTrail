@@ -11,6 +11,14 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.sp
+import com.example.papertrail.R
+
+
 
 
 // 🌿 Custom green light theme
@@ -40,9 +48,23 @@ private val GreenDarkColorScheme = darkColorScheme(
 @Composable
 fun PaperTrailTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
+    fontName: String = "Inter",
     dynamicColor: Boolean = false,
     content: @Composable () -> Unit
 ) {
+    val fontFamily = when (fontName) {
+        "Roboto" -> FontFamily(
+            Font(R.font.roboto_variable, weight = FontWeight.Normal)
+        )
+        "Lato" -> FontFamily(
+            Font(R.font.lato_regular, weight = FontWeight.Normal),
+            Font(R.font.lato_bold, weight = FontWeight.Bold)
+        )
+        else -> FontFamily(
+            Font(R.font.inter_variable, weight = FontWeight.Normal)
+        )
+    }
+
     val colorScheme = when {
         // Dynamic color (Android 12+)
         dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
@@ -67,7 +89,12 @@ fun PaperTrailTheme(
 
     MaterialTheme(
         colorScheme = colorScheme,
-        typography = AppTypography, // ✅ uses Inter
-        content = content
+        typography = Typography(
+            displayLarge = TextStyle(fontFamily = fontFamily, fontSize = 60.sp),
+            headlineLarge = TextStyle(fontFamily = fontFamily, fontSize = 36.sp),
+            titleLarge = TextStyle(fontFamily = fontFamily, fontSize = 24.sp),
+            bodyLarge = TextStyle(fontFamily = fontFamily, fontSize = 18.sp),
+            labelSmall = TextStyle(fontFamily = fontFamily, fontSize = 13.sp),
+        ),        content = content
     )
 }

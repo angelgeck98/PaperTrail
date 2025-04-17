@@ -24,6 +24,9 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import androidx.compose.runtime.saveable.rememberSaveable
+import android.app.Activity
+import android.content.Context
+import androidx.compose.ui.platform.LocalContext
 
 
 
@@ -64,6 +67,12 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    override fun attachBaseContext(newBase: Context) {
+        val prefs = newBase.getSharedPreferences("settings", MODE_PRIVATE)
+        val lang = prefs.getString("language", "en") ?: "en"
+        super.attachBaseContext(com.example.papertrail.localization.LocaleHelper.wrap(newBase, lang))
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -78,10 +87,42 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             var isDarkTheme by rememberSaveable { mutableStateOf(false) }
+            var selectedFont by rememberSaveable { mutableStateOf("Inter") }
+            var selectedLanguage by rememberSaveable { mutableStateOf("English") }
             var savedReceipts by remember { mutableStateOf(listOf<String>()) }
             val navController = rememberNavController()
+            val context = LocalContext.current
+            LaunchedEffect(Unit) {
+                val prefs = context.getSharedPreferences("settings", MODE_PRIVATE)
+                val savedLangCode = prefs.getString("language", "en")
+                selectedLanguage = when (savedLangCode) {
+                    "es" -> "Spanish"
+                    else -> "English"
+                }
+            }
+            val activity = context as? Activity
 
-            PaperTrailTheme(darkTheme = isDarkTheme) {
+            fun onLanguageSelected(language: String) {
+                val langCode = when (language) {
+                    "Spanish" -> "es"
+                    "English" -> "en"
+                    else -> "en"
+                }
+
+                context.getSharedPreferences("settings", MODE_PRIVATE)
+                    .edit()
+                    .putString("language", langCode)
+                    .apply()
+
+                activity?.recreate()
+            }
+
+
+
+            PaperTrailTheme(
+                darkTheme = isDarkTheme ,
+                fontName = selectedFont
+                ) {
                 NavHost(navController, startDestination = "home") {
                     composable("home") {
                         HomeScreen(
@@ -94,6 +135,8 @@ class MainActivity : ComponentActivity() {
                         SettingsScreen(
                             isDarkTheme = isDarkTheme,
                             onThemeChange = { isDarkTheme = it },
+                            onFontChange = { selectedFont = it },
+                            onLanguageChange = { onLanguageSelected(it) },
                             onBack = { navController.popBackStack() }
                         )
                     }

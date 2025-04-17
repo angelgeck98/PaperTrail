@@ -27,6 +27,9 @@ import kotlinx.coroutines.delay
 import java.util.concurrent.Executors
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.ui.res.stringResource
+import com.example.papertrail.R
+
 
 
 
@@ -98,7 +101,7 @@ fun CameraScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Scan Receipt") },
+                title = { Text(stringResource(R.string.scan_receipt)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Back")

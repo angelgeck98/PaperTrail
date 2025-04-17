@@ -20,6 +20,9 @@ import com.example.papertrail.parsers.ReceiptParser
 import java.text.NumberFormat
 import java.util.*
 import androidx.compose.material.icons.filled.Settings
+import com.example.papertrail.R
+import androidx.compose.ui.res.stringResource
+
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -33,7 +36,7 @@ fun HomeScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("PaperTrail") },
+                title = { Text(stringResource(R.string.app_name)) },
                 actions = {
                     IconButton(onClick = onSettingsClick) {
                         Icon(
@@ -58,7 +61,7 @@ fun HomeScreen(
 
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(
-                    text = "PaperTrail",
+                    text = stringResource(R.string.app_name),
                     style = MaterialTheme.typography.headlineLarge.copy(
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onBackground
@@ -71,7 +74,7 @@ fun HomeScreen(
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Text(
-                        text = "📸 Scan a New Receipt" ,
+                        text = stringResource(R.string.scan_receipt),
                         style = MaterialTheme.typography.headlineSmall.copy(
                             fontWeight = FontWeight.Bold
                         )
@@ -85,7 +88,7 @@ fun HomeScreen(
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Text(
-                        text = "📁 Saved Receipts" ,
+                        text = stringResource(R.string.saved_receipts),
                         style = MaterialTheme.typography.headlineSmall.copy(
                             fontWeight = FontWeight.Bold
                         )
