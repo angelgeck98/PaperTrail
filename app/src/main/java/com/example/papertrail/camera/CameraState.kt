@@ -23,6 +23,7 @@ class CameraState(
     
     fun initializeCamera(
         previewView: PreviewView,
+        lifecycleOwner: LifecycleOwner,
         onSuccess: () -> Unit,
         onError: (Exception) -> Unit
     ) {

@@ -1,5 +1,6 @@
 package com.example.papertrail
 
+
 import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Bundle
@@ -7,21 +8,51 @@ import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
-import com.example.papertrail.ui.screens.CameraScreen
-import com.example.papertrail.ui.screens.ExpenseBreakdownScreen
+import androidx.navigation.NavType
+import androidx.navigation.compose.*
+import com.example.papertrail.ui.screens.*
 import com.example.papertrail.ui.theme.PaperTrailTheme
+import androidx.compose.foundation.layout.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.unit.dp
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
+
+
+
+@Composable
+fun PermissionRequestScreen(onRequestPermission: () -> Unit) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Text(
+            text = "Camera permission is required to take photos",
+            style = MaterialTheme.typography.bodyLarge,
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+        )
+        Spacer(modifier = Modifier.height(16.dp))
+        Button(onClick = onRequestPermission) {
+            Text("Grant Permission")
+        }
+    }
+}
+
+
+
 
 class MainActivity : ComponentActivity() {
     private var hasCameraPermission by mutableStateOf(false)
-    
+
     private val requestPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { isGranted ->
@@ -33,63 +64,82 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        
-        // Check camera permission
+
         hasCameraPermission = ContextCompat.checkSelfPermission(
             this,
             Manifest.permission.CAMERA
         ) == PackageManager.PERMISSION_GRANTED
-        
+
         if (!hasCameraPermission) {
             requestPermissionLauncher.launch(Manifest.permission.CAMERA)
         }
 
         setContent {
             PaperTrailTheme {
-                Surface(
-                    modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.background
-                ) {
-                    var showExpenseBreakdown by remember { mutableStateOf(false) }
-                    var receiptText by remember { mutableStateOf("") }
+                val navController = rememberNavController()
+                var savedReceipts by remember { mutableStateOf(listOf<String>()) }
 
-                    if (showExpenseBreakdown) {
-                        ExpenseBreakdownScreen(
-                            ocrText = receiptText,
-                            onBack = { showExpenseBreakdown = false },
-                            onSave = {
-                                // TODO: Implement save functionality
-                                showExpenseBreakdown = false
-                            }
+                NavHost(navController, startDestination = "home") {
+                    composable("home") {
+                        HomeScreen(
+                            onCaptureReceipt = { navController.navigate("camera") },
+                            onViewReceipts = { navController.navigate("receipts") }
                         )
-                    } else if (hasCameraPermission) {
-                        CameraScreen(
-                            onOcrComplete = { text: String ->
-                                receiptText = text
-                                showExpenseBreakdown = true
-                            }
-                        )
-                    } else {
-                        // Permission request UI
-                        Column(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .padding(16.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.Center
-                        ) {
-                            Text(
-                                text = "Camera permission is required to take photos",
-                                style = MaterialTheme.typography.bodyLarge,
-                                textAlign = TextAlign.Center
+                    }
+
+                    composable("camera") {
+                        if (hasCameraPermission) {
+                            CameraScreen(onOcrComplete = { text ->
+                                savedReceipts = savedReceipts + text
+                                navController.navigate("breakdown/${text}")
+                            },
+                                onBack = { navController.popBackStack() }
                             )
-                            Spacer(modifier = Modifier.height(16.dp))
-                            Button(
-                                onClick = { requestPermissionLauncher.launch(Manifest.permission.CAMERA) }
-                            ) {
-                                Text("Grant Permission")
-                            }
+                        } else {
+                            // Fallback UI for no permission
+                            PermissionRequestScreen(
+                                onRequestPermission = {
+                                    requestPermissionLauncher.launch(Manifest.permission.CAMERA)
+                                }
+                            )
                         }
+                    }
+
+                    composable("receipts") {
+                        ReceiptListScreen(
+                            receipts = savedReceipts,
+                            onReceiptSelected = { text ->
+                                navController.navigate("detail/${text}")
+                            },
+                            onBack = { navController.popBackStack() }
+                        )
+                    }
+
+                    composable(
+                        "breakdown/{text}",
+                        arguments = listOf(navArgument("text") { type = NavType.StringType })
+                    ) { backStackEntry ->
+                        val text = backStackEntry.arguments?.getString("text") ?: ""
+                        ExpenseBreakdownScreen(
+                            ocrText = text,
+                            onBack = { navController.popBackStack() },
+                            onSave = {
+                                // TODO: Save functionality here
+                                navController.popBackStack()
+                            }
+                        )
+                    }
+
+                    composable(
+                        "detail/{text}",
+                        arguments = listOf(navArgument("text") { type = NavType.StringType })
+                    ) { backStackEntry ->
+                        val text = backStackEntry.arguments?.getString("text") ?: ""
+                        ReceiptDetailScreen(
+                            text = text,
+                            onBack = { navController.popBackStack() },
+                            onNewReceipt = { navController.navigate("camera") }
+                        )
                     }
                 }
             }

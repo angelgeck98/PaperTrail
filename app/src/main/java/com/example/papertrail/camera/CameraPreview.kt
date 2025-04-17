@@ -31,6 +31,7 @@ fun CameraPreview(
             Log.d("CameraPreview", "Starting camera initialization")
             cameraState.initializeCamera(
                 previewView = previewView,
+                lifecycleOwner = lifecycleOwner,
                 onSuccess = {
                     Log.d("CameraPreview", "Camera initialized successfully")
                 },

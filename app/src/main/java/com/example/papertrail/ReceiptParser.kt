@@ -62,9 +62,9 @@ class ReceiptParser {
             // Try to find items
             val itemMatch = itemPattern.matcher(line)
             if (itemMatch.find()) {
-                val name = itemMatch.group(1).trim()
-                val price = itemMatch.group(2).toDoubleOrNull()
-                if (price != null) {
+                val name = itemMatch.group(1)?.trim()
+                val price = itemMatch.group(2)?.toDoubleOrNull()
+                if (!name.isNullOrBlank() && price != null) {
                     items.add(ReceiptItem(name, price))
                 }
             }

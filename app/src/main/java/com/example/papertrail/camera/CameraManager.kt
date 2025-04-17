@@ -14,7 +14,6 @@ import androidx.lifecycle.LifecycleOwner
 import java.io.File
 import java.util.concurrent.Executors
 
-@OptIn(markerClass = [ExperimentalGetImage::class])
 class CameraManager(private val context: Context) {
     private var imageCapture: ImageCapture? = null
     private var camera: androidx.camera.core.Camera? = null
