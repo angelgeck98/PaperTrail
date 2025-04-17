@@ -23,6 +23,8 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import androidx.compose.runtime.saveable.rememberSaveable
+
 
 
 
@@ -75,34 +77,25 @@ class MainActivity : ComponentActivity() {
         }
 
         setContent {
-            PaperTrailTheme {
-                val navController = rememberNavController()
-                var savedReceipts by remember { mutableStateOf(listOf<String>()) }
+            var isDarkTheme by rememberSaveable { mutableStateOf(false) }
+            var savedReceipts by remember { mutableStateOf(listOf<String>()) }
+            val navController = rememberNavController()
 
+            PaperTrailTheme(darkTheme = isDarkTheme) {
                 NavHost(navController, startDestination = "home") {
                     composable("home") {
                         HomeScreen(
                             onCaptureReceipt = { navController.navigate("camera") },
-                            onViewReceipts = { navController.navigate("receipts") }
+                            onViewReceipts = { navController.navigate("receipts") },
+                            onSettingsClick = { navController.navigate("settings") }
                         )
                     }
-
-                    composable("camera") {
-                        if (hasCameraPermission) {
-                            CameraScreen(onOcrComplete = { text ->
-                                savedReceipts = savedReceipts + text
-                                navController.navigate("breakdown/${text}")
-                            },
-                                onBack = { navController.popBackStack() }
-                            )
-                        } else {
-                            // Fallback UI for no permission
-                            PermissionRequestScreen(
-                                onRequestPermission = {
-                                    requestPermissionLauncher.launch(Manifest.permission.CAMERA)
-                                }
-                            )
-                        }
+                    composable("settings") {
+                        SettingsScreen(
+                            isDarkTheme = isDarkTheme,
+                            onThemeChange = { isDarkTheme = it },
+                            onBack = { navController.popBackStack() }
+                        )
                     }
 
                     composable("receipts") {

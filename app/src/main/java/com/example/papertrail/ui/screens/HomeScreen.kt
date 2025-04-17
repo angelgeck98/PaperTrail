@@ -19,44 +19,90 @@ import com.example.papertrail.models.ExpenseItem
 import com.example.papertrail.parsers.ReceiptParser
 import java.text.NumberFormat
 import java.util.*
+import androidx.compose.material.icons.filled.Settings
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
     onCaptureReceipt: () -> Unit,
-    onViewReceipts: () -> Unit
+    onViewReceipts: () -> Unit,
+    onSettingsClick: () -> Unit
+
 ) {
     Scaffold(
         topBar = {
-            TopAppBar(title = { Text("PaperTrail") })
-        }
+            TopAppBar(
+                title = { Text("PaperTrail") },
+                actions = {
+                    IconButton(onClick = onSettingsClick) {
+                        Icon(
+                            imageVector = Icons.Default.Settings,
+                            contentDescription = "Settings"
+                        )
+                    }
+                }
+            )
+        },
+        containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
                 .padding(24.dp),
-            verticalArrangement = Arrangement.Center,
+            verticalArrangement = Arrangement.SpaceBetween, // space out content
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
+            Spacer(modifier = Modifier.height(48.dp)) // top buffer
+
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(
+                    text = "PaperTrail",
+                    style = MaterialTheme.typography.headlineLarge.copy(
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onBackground
+                    ),
+                    modifier = Modifier.padding(bottom = 32.dp)
+                )
+
+                Button(
+                    onClick = onCaptureReceipt,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        text = "📸 Scan a New Receipt" ,
+                        style = MaterialTheme.typography.headlineSmall.copy(
+                            fontWeight = FontWeight.Bold
+                        )
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(32.dp))
+
+                Button(
+                    onClick = onViewReceipts,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        text = "📁 Saved Receipts" ,
+                        style = MaterialTheme.typography.headlineSmall.copy(
+                            fontWeight = FontWeight.Bold
+                        )
+                    )
+                }
+            }
+
+            // Version footer
             Text(
-                text = "Welcome to PaperTrail!",
-                style = MaterialTheme.typography.headlineMedium,
-                modifier = Modifier.padding(bottom = 32.dp)
+                text = "v1.0.0",
+                style = MaterialTheme.typography.labelSmall.copy(
+                    fontWeight = FontWeight.Medium
+                ),
+                color = MaterialTheme.colorScheme.onBackground,
+                modifier = Modifier.padding(bottom = 8.dp)
             )
-            Button(
-                onClick = onCaptureReceipt,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text("📸 Capture a New Receipt")
-            }
-            Spacer(modifier = Modifier.height(16.dp))
-            Button(
-                onClick = onViewReceipts,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text("📁 View Saved Receipts")
-            }
         }
     }
 }
+
